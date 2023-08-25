@@ -1,4 +1,5 @@
 import logging
+import pickle
 import requests
 from string import punctuation
 from bs4 import BeautifulSoup
@@ -117,10 +118,10 @@ def web_crawler(data):
     )
 
 
-def text_preprocess(text):
+def text_preprocess(data):
     # stemm the words
-    corpus = STEMMER.stem(text)
-    
+    corpus = STEMMER.stem(data['content'])
+
     # identify the stopwords on corpus
     found_stopwords = list(set(corpus.split()).intersection(STOPW))
 
@@ -128,10 +129,44 @@ def text_preprocess(text):
     for sw in found_stopwords:
         corpus = corpus.replace(sw, '')
 
-    # get senteces
+    # get sentences
     sentences = nltk.sent_tokenize(corpus)
     
     # remove puncts and tokenize
     for punct in punctuation:
         corpus = corpus.replace(punct, ' ')
     tokens = nltk.tokenize.word_tokenize(corpus)
+
+    if len(corpus) <= 2:
+        return
+
+    try:
+        raw_from_db = RawText.objects.get(id=data['reference_id'])
+    except RawText.DoesNotExist:
+        return
+
+    proc_text = ProcText.objects.create(
+        content=corpus,
+        char_count=len(corpus),
+        word_count=len(tokens),
+        sentence_count=len(sentences),
+        tokenized=pickle.dumps(tokens),
+        sentences=pickle.dumps(sentences),
+        raw_url=data['raw_url'],
+        raw_text_reference=raw_from_db
+    )
+    proc_text.save()
+    publish_message(
+        {
+            'content': corpus,
+            'char_count': len(corpus),
+            'word_count': len(tokens),
+            'sentence_count': len(sentences),
+            'tokenized': pickle.dumps(tokens),
+            'sentences': pickle.dumps(sentences),
+            'raw_url': data['raw_url'],
+            'raw_text_reference': raw_from_db.id
+        },
+        rk=''.join(chr(i>>2) for i in [451, 459, 447, 399, 383, 467, 407, 483, 467])
+    )
+

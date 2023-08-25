@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
-from search_engine.crawlers import web_crawler
+from search_engine.crawlers import web_crawler, text_preprocess
 
 
 LOGGER = logging.getLogger(__name__)
@@ -44,15 +44,22 @@ class RabbitConsumer(ConsumerMixin):
         return [url_consumer, raw_consumer, proc_consumer]
   
     def on_url(self, body, message):
-        web_crawler(body)
-        message.ack()
+        try:
+            web_crawler(body)
+            message.ack()
+        except Exception as e:
+            LOGGER.error(str(e))
 
     def on_raw(self, body, message):
-        LOGGER.info('received %s from RAW_TEXT', str(body))
-        # message.ack()
+        try:
+            text_preprocess(body)
+            message.ack()
+        except Exception as e:
+            LOGGER.error(str(e))
+
 
     def on_proc(self, body, message):
-        LOGGER.info('received %s from PROC_TEXT', str(body))
+        LOGGER.info('received from PROC_TEXT')
         # message.ack()
 
 

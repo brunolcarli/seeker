@@ -14,6 +14,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         LOGGER.info('Starting Web Spider')
         while True:
-            web_weave()
-            sleep(3)
+            try:
+                web_weave()
+            except Exception as e:
+                LOGGER.error(str(e))
+            sleep(60)
 
