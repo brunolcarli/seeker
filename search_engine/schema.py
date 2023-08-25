@@ -1,6 +1,7 @@
+import pickle
 import graphene
 from django.conf import settings
-from search_engine.models import FoundURL, RawText
+from search_engine.models import FoundURL, RawText, ProcText
 
 
 
@@ -17,6 +18,23 @@ class RawTextType(graphene.ObjectType):
     sentence_count = graphene.Int()
     raw_url = graphene.String()
     url_reference = graphene.Field(FoundURLType)
+
+
+class ProcTextType(graphene.ObjectType):
+    content = graphene.String(description='Raw text extracted from URL')
+    char_count = graphene.Int()
+    word_count = graphene.Int()
+    sentence_count = graphene.Int()
+    raw_url = graphene.String()
+    sentences = graphene.List(graphene.String)
+    tokenized = graphene.List(graphene.String)
+    raw_text_reference = graphene.Field(RawTextType)
+
+    def resolve_sentences(self, info, **kwargs):
+        return pickle.loads(self.sentences)
+
+    def resolve_tokenized(self, info, **kwargs):
+        return pickle.loads(self.tokenized)
 
 
 class Query(graphene.ObjectType):
@@ -45,3 +63,11 @@ class Query(graphene.ObjectType):
     )
     def resolve_raw_texts(self, info, **kwargs):
         return RawText.objects.filter(**kwargs)
+
+    proc_texts = graphene.List(
+        ProcTextType,
+        content_icontains=graphene.String(),
+        raw_url=graphene.String()
+    )
+    def resolve_proc_texts(self, info, **kwargs):
+        return ProcText.objects.filter(**kwargs)
