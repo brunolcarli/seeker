@@ -6,3 +6,10 @@ shell:
 
 server:
 	python3 manage.py runserver 0.0.0.0:1025
+
+migrate:
+	python3 manage.py makemigrations
+	python3 manage.py migrate
+
+web_spider:
+	python3 manage.py web_spider
