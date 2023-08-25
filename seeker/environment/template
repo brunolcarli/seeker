@@ -1,0 +1,9 @@
+export ENV_REF=development
+
+export AMQP_HOST=amqp://your_amqp_broker:port
+export AMQP_USER=your_rabbitMQ_username
+export AMQP_PASSWORD=your_rabbit_password
+export AMQP_VHOST=your_rabbitMQ_virtual_host
+export AMQP_EXCHANGE=your_amqp_broker_exchange
+export AMQP_EX_TYPE=your_amqp_exchange_type
+export AMQP_RK_PREFIX=your_routing_key_prefix

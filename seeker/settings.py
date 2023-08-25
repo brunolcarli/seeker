@@ -9,9 +9,10 @@ https://docs.djangoproject.com/en/2.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
-
+import logging
 import os
 import uuid
+from django.utils.log import DEFAULT_LOGGING
 
 
 VERSION = '0.0.0'
@@ -27,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = str(uuid.uuid4())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -120,12 +121,53 @@ USE_L10N = True
 USE_TZ = True
 
 
+LOGLEVEL = 'info'
+
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            # exact format is not important, this is the minimum information
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        },
+    },
+    'loggers': {
+    # root logger
+        '': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+    },
+})
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
 
-
 GRAPHENE = {
     'SCHEMA': 'seeker.schema.schema',
+}
+
+
+AMQP = {
+    'connection': {
+        'hostname': os.environ.get('AMQP_HOST'),
+        'userid': os.environ.get('AMQP_USER'),
+        'password': os.environ.get('AMQP_PASSWORD'),
+        'heartbeat': 6,
+        'virtual_host': os.environ.get('AMQP_VHOST')
+    },
+    'routing': {
+        'rk_prefix': os.environ.get('AMQP_RK_PREFIX'),
+        'exchange_name': os.environ.get('AMQP_EXCHANGE'),
+        'exchange_type': os.environ.get('AMQP_EX_TYPE'),
+    }    
 }
