@@ -2,8 +2,8 @@ from kombu import Connection, Exchange
 from django.conf import settings
 
 
-def publish_message(payload):
-    rk = settings.AMQP['routing']['rk_prefix']+chr(46)+chr(468 >> 2)+chr(458 >> 2)+chr(433 >> 2)
+def publish_message(payload, rk):
+    rk = settings.AMQP['routing']['rk_prefix']+chr(46)+rk
     ex = Exchange(
         settings.AMQP['routing']['exchange_name'],
         settings.AMQP['routing']['exchange_type']
