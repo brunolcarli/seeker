@@ -119,15 +119,16 @@ def web_crawler(data):
 
 
 def text_preprocess(data):
-    # stemm the words
-    corpus = STEMMER.stem(data['content'])
-
+    corpus = data['content']
     # identify the stopwords on corpus
     found_stopwords = list(set(corpus.split()).intersection(STOPW))
 
     # Remove the found stopwords from corpus
     for sw in found_stopwords:
-        corpus = corpus.replace(sw, '')
+        corpus = corpus.replace(f' {sw} ', ' ')
+
+    # stemm the words
+    corpus = ' '.join(STEMMER.stem(i) for i in corpus.split())
 
     # get sentences
     sentences = nltk.sent_tokenize(corpus)
@@ -136,6 +137,8 @@ def text_preprocess(data):
     for punct in punctuation:
         corpus = corpus.replace(punct, ' ')
     tokens = nltk.tokenize.word_tokenize(corpus)
+
+    corpus = ' '.join(i for i in tokens if len(i) >= 2)
 
     if len(corpus) <= 2:
         return
