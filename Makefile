@@ -13,3 +13,6 @@ migrate:
 
 web_spider:
 	python3 manage.py web_spider
+
+amqp_consumer:
+	python3 manage.py amqp_consumer
