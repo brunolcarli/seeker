@@ -1,6 +1,6 @@
 import graphene
 from django.conf import settings
-from search_engine.models import FoundURL
+from search_engine.models import FoundURL, RawText
 
 
 
@@ -9,6 +9,14 @@ class FoundURLType(graphene.ObjectType):
     viewed = graphene.Boolean(description='True if this URL was already viewed by the web spider')
     status_code = graphene.Int(description='HTTP request response status code if the URL was already viewed')
 
+
+class RawTextType(graphene.ObjectType):
+    content = graphene.String(description='Raw text extracted from URL')
+    char_count = graphene.Int()
+    word_count = graphene.Int()
+    sentence_count = graphene.Int()
+    raw_url = graphene.String()
+    url_reference = graphene.Field(FoundURLType)
 
 
 class Query(graphene.ObjectType):
@@ -29,3 +37,11 @@ class Query(graphene.ObjectType):
     )
     def resolve_found_urls(self, info, **kwargs):
         return FoundURL.objects.filter(**kwargs)
+
+    raw_texts = graphene.List(
+        RawTextType,
+        content_icontains=graphene.String(),
+        raw_url=graphene.String()
+    )
+    def resolve_raw_texts(self, info, **kwargs):
+        return RawText.objects.filter(**kwargs)
