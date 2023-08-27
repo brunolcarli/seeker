@@ -45,7 +45,7 @@ def web_weave():
             continue
 
         # grab all existent url htperlinks from page HTML
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.content.decode('utf-8'), 'html.parser')
         found_urls =[i.attrs.get('href') for i in soup.find_all('a') if i.attrs.get('href', '').startswith('http')]
 
         # Create new found URLs on database
@@ -79,7 +79,7 @@ def web_crawler(data):
         LOGGER.info(f'|Craler|Request failed for URL: {url}')
         return
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.content.decode('utf-8'), 'html.parser')
     texts = [i.text for i in soup.find_all(['p', 'span']) if len(i.text) > 1]
     corpus = ' '.join(texts).lower().replace('\t', '').replace('\n', ' ').strip()
     if len(corpus) <= 2:
@@ -110,7 +110,7 @@ def web_crawler(data):
             'word_count': token_count,
             'sentence_count': sentence_count,
             'raw_url': url,
-            'reference_id': url_from_db.id
+            'reference_id': raw_text.id
         },
         rk=''.join(chr(i>>2) for i in [456, 388, 476, 380, 464, 404, 480, 467])
     )

@@ -144,7 +144,8 @@ class TextQuery(graphene.relay.ClientIDMutation):
 
         # update queryset for each other inputed token
         for token in stemmed_tokens:
-            seed_qs = seed_qs.intersection(TextMetadata.objects.filter(content__icontains=token))
+            new = TextMetadata.objects.filter(content__icontains=token)
+            seed_qs = seed_qs | new
 
         texts = []
 
