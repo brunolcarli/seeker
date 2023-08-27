@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  seeker:
+    build: .    
+    image: seeker:devel
+    restart: on-failure
+    container_name: seeker_container
+    command: make server
+    env_file: seeker/environment/seeker_env
+    volumes:
+      - .:/app
+      - static_data:/app/static
+    ports:
+      - "1025:1025"
+
+  web_spider:
+    build: .
+    image: seeker:devel
+    container_name: seeker_web_spider
+    restart: on-failure
+    command: make web_spider
+    env_file: seeker/environment/seeker_env
+  
+  seeker_amqp:
+    build: .
+    image: seeker:devel
+    container_name: seeker_amqp_consumer
+    restart: on-failure
+    command: make amqp_consumer
+    env_file: seeker/environment/seeker_env
+
+volumes:
+  static_data:
