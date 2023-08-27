@@ -1,6 +1,12 @@
 import pickle
 import graphene
 from django.conf import settings
+import nltk
+
+from gensim import corpora
+from gensim import similarities
+from gensim import models
+
 from search_engine.models import FoundURL, RawText, ProcText, TextMetadata
 from search_engine.types import DynamicScalar
 
@@ -70,6 +76,11 @@ class TextMetadataType(graphene.ObjectType):
         return pickle.loads(self.text_offense)
 
 
+class QueryResultType(graphene.ObjectType):
+    text_input = graphene.String()
+    found_urls = DynamicScalar()
+
+
 class Query(graphene.ObjectType):
     version = graphene.String(
         description='Returns the API version.'
@@ -91,7 +102,7 @@ class Query(graphene.ObjectType):
 
     raw_texts = graphene.List(
         RawTextType,
-        content_icontains=graphene.String(),
+        content__icontains=graphene.String(),
         raw_url=graphene.String()
     )
     def resolve_raw_texts(self, info, **kwargs):
@@ -99,7 +110,7 @@ class Query(graphene.ObjectType):
 
     proc_texts = graphene.List(
         ProcTextType,
-        content_icontains=graphene.String(),
+        content__icontains=graphene.String(),
         raw_url=graphene.String()
     )
     def resolve_proc_texts(self, info, **kwargs):
@@ -112,3 +123,54 @@ class Query(graphene.ObjectType):
     )
     def resolve_texts_metadata(self, info, **kwargs):
         return TextMetadata.objects.filter(**kwargs)
+
+
+## Mutations
+
+class TextQuery(graphene.relay.ClientIDMutation):
+    query_result = graphene.Field(QueryResultType)
+    
+    class Input:
+        text_input = graphene.String(required=True)
+        
+    def mutate_and_get_payload(self, info, **kwargs):
+        if not kwargs['text_input'].strip():
+            raise Exception('Invalid input query')
+        
+        stemmer = nltk.stem.SnowballStemmer('portuguese')
+        stemmed_tokens = [stemmer.stem(i) for i in kwargs['text_input'].lower().split()]
+        seed_token = stemmed_tokens.pop(0)
+        seed_qs = TextMetadata.objects.filter(content__icontains=seed_token)
+
+        # update queryset for each other inputed token
+        for token in stemmed_tokens:
+            seed_qs = seed_qs.intersection(TextMetadata.objects.filter(content__icontains=token))
+
+        texts = []
+
+        for i in seed_qs:
+            texts.append(pickle.loads(i.proc_text_reference.tokenized))
+
+        corpora_dictionary = corpora.Dictionary(texts)
+        corpus_dictionary = [corpora_dictionary.doc2bow(doc) for doc in texts]
+        lsi = models.LsiModel(corpus=corpus_dictionary, num_topics=10, id2word=corpora_dictionary)
+
+        # lsi_topics = [[word for word, prob in topic] for topicid, topic in lsi.show_topics(formatted=False)]
+        query = [seed_token]+stemmed_tokens
+
+        vec_bow = corpora_dictionary.doc2bow(query)
+        vec_lsi = lsi[vec_bow]
+
+        sim_matrix = similarities.MatrixSimilarity(lsi[corpus_dictionary])
+        sims = sim_matrix[vec_lsi]
+        sims = sorted(enumerate(sims), key = lambda item: -item[1])
+
+        res = {}
+        for i, j in enumerate(sims):
+            res[seed_qs[j[0]].proc_text_reference.raw_url] = float(j[1])
+
+        return TextQuery(QueryResultType(text_input=kwargs['text_input'], found_urls=res))
+
+
+class Mutation:
+    text_query = TextQuery.Field()
