@@ -2,16 +2,14 @@ import logging
 import pickle
 import requests
 from string import punctuation
-from bs4 import BeautifulSoup
-from search_engine.models import FoundURL, RawText, ProcText
-from search_engine.rabbit import publish_message
-
 from collections import defaultdict
-from gensim import corpora
-from gensim import similarities
-from gensim import models
 import nltk
 from nltk.corpus import stopwords
+from bs4 import BeautifulSoup
+from search_engine.models import FoundURL, RawText, ProcText, TextMetadata
+from search_engine.rabbit import publish_message
+from search_engine.external_requests import RequestLISA
+
 
 
 LOGGER = logging.getLogger(__name__)
@@ -168,8 +166,37 @@ def text_preprocess(data):
             'tokenized': pickle.dumps(tokens),
             'sentences': pickle.dumps(sentences),
             'raw_url': data['raw_url'],
-            'raw_text_reference': raw_from_db.id
+            'raw_text_reference': raw_from_db.id,
+            'reference_id': proc_text.id
         },
         rk=''.join(chr(i>>2) for i in [451, 459, 447, 399, 383, 467, 407, 483, 467])
     )
 
+
+def process_text_metadata(data):
+    tokens = pickle.loads(data['tokenized'])
+    bigrams = [i for i in nltk.bigrams(tokens)]
+    trigrams = [i for i in nltk.trigrams(tokens)]
+    frequency = nltk.FreqDist(tokens)
+    bigrams_freq = nltk.collocations.BigramCollocationFinder.from_words(tokens).ngram_fd
+    trigrams_freq = nltk.collocations.TrigramCollocationFinder.from_words(tokens).ngram_fd
+    part_of_speech = RequestLISA.request_part_of_speech(' '.join(set(tokens)))
+    text_offense = RequestLISA.request_text_offense_level(data['content'])
+
+    try:
+        proc_text_from_db = ProcText.objects.get(id=data['reference_id'])
+    except ProcText.DoesNotExist:
+        return
+
+    text_meta = TextMetadata.objects.create(
+        content=data['content'],
+        bigrams=pickle.dumps(bigrams),
+        trigrams=pickle.dumps(trigrams),
+        frequency=pickle.dumps(frequency),
+        bigrams_freq=pickle.dumps(bigrams_freq),
+        trigrams_freq=pickle.dumps(trigrams_freq),
+        part_of_speech=pickle.dumps(part_of_speech),
+        text_offense=pickle.dumps(text_offense),
+        proc_text_reference=proc_text_from_db
+    )
+    text_meta.save()

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from kombu import Connection, Exchange, Queue
 from kombu.mixins import ConsumerMixin
-from search_engine.crawlers import web_crawler, text_preprocess
+from search_engine.crawlers import web_crawler, text_preprocess, process_text_metadata
 
 
 LOGGER = logging.getLogger(__name__)
@@ -59,8 +59,11 @@ class RabbitConsumer(ConsumerMixin):
 
 
     def on_proc(self, body, message):
-        LOGGER.info('received from PROC_TEXT')
-        # message.ack()
+        try:
+            process_text_metadata(body)
+            message.ack()
+        except Exception as e:
+            LOGGER.error(str(e))
 
 
 class Command(BaseCommand):
