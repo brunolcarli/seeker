@@ -1,8 +1,8 @@
 import pickle
 import graphene
 from django.conf import settings
-from search_engine.models import FoundURL, RawText, ProcText
-
+from search_engine.models import FoundURL, RawText, ProcText, TextMetadata
+from search_engine.types import DynamicScalar
 
 
 class FoundURLType(graphene.ObjectType):
@@ -35,6 +35,39 @@ class ProcTextType(graphene.ObjectType):
 
     def resolve_tokenized(self, info, **kwargs):
         return pickle.loads(self.tokenized)
+
+
+class TextMetadataType(graphene.ObjectType):
+    content = graphene.String(description='Raw text extracted from URL')
+    bigrams = DynamicScalar()
+    trigrams = DynamicScalar()
+    frequency = DynamicScalar()
+    bigrams_freq = DynamicScalar()
+    trigrams_freq = DynamicScalar()
+    part_of_speech = DynamicScalar()
+    text_offense = DynamicScalar()
+    proc_text_reference = graphene.Field(ProcTextType)
+
+    def resolve_bigrams(self, info, **kwargs):
+        return pickle.loads(self.bigrams)
+
+    def resolve_trigrams(self, info, **kwargs):
+        return pickle.loads(self.trigrams)
+
+    def resolve_frequency(self, info, **kwargs):
+        return pickle.loads(self.frequency)
+
+    def resolve_bigrams_freq(self, info, **kwargs):
+        return pickle.loads(self.bigrams_freq).most_common()
+
+    def resolve_trigrams_freq(self, info, **kwargs):
+        return pickle.loads(self.trigrams_freq).most_common()
+
+    def resolve_part_of_speech(self, info, **kwargs):
+        return pickle.loads(self.part_of_speech)
+
+    def resolve_text_offense(self, info, **kwargs):
+        return pickle.loads(self.text_offense)
 
 
 class Query(graphene.ObjectType):
@@ -71,3 +104,11 @@ class Query(graphene.ObjectType):
     )
     def resolve_proc_texts(self, info, **kwargs):
         return ProcText.objects.filter(**kwargs)
+
+    texts_metadata = graphene.List(
+        TextMetadataType,
+        content__icontains=graphene.String(),
+        description='Processed texts metadata extracted with NLP'
+    )
+    def resolve_texts_metadata(self, info, **kwargs):
+        return TextMetadata.objects.filter(**kwargs)
