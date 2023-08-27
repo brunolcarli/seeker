@@ -22,7 +22,7 @@ class RabbitConsumer(ConsumerMixin):
             on_decode_error=self.on_decode_error,
             accept=['msgpack'],
             tag_prefix='URLS||seeker_consumer'+str(uuid.uuid4()),
-            prefetch_count=10
+            prefetch_count=5
         )
         raw_consumer = Consumer(
             queues=self.queues[1],
@@ -30,7 +30,7 @@ class RabbitConsumer(ConsumerMixin):
             on_decode_error=self.on_decode_error,
             accept=['msgpack'],
             tag_prefix='RAW_TEXT||seeker_consumer'+str(uuid.uuid4()),
-            prefetch_count=10
+            prefetch_count=1
         )
         proc_consumer = Consumer(
             queues=self.queues[2],
@@ -38,7 +38,7 @@ class RabbitConsumer(ConsumerMixin):
             on_decode_error=self.on_decode_error,
             accept=['msgpack'],
             tag_prefix='PROC_TEXT||seeker_consumer'+str(uuid.uuid4()),
-            prefetch_count=10
+            prefetch_count=1
         )
         
         return [url_consumer, raw_consumer, proc_consumer]
