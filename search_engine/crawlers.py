@@ -180,8 +180,14 @@ def process_text_metadata(data):
     frequency = nltk.FreqDist(tokens)
     bigrams_freq = nltk.collocations.BigramCollocationFinder.from_words(tokens).ngram_fd
     trigrams_freq = nltk.collocations.TrigramCollocationFinder.from_words(tokens).ngram_fd
-    part_of_speech = RequestLISA.request_part_of_speech(' '.join(set(tokens)))
-    text_offense = RequestLISA.request_text_offense_level(data['content'])
+    try:
+        part_of_speech = RequestLISA.request_part_of_speech(' '.join(set(tokens)))
+    except:
+        part_of_speech = []
+    try:
+        text_offense = RequestLISA.request_text_offense_level(data['content'])
+    except:
+        text_offense = {}
 
     try:
         proc_text_from_db = ProcText.objects.get(id=data['reference_id'])
