@@ -16,3 +16,10 @@ web_spider:
 
 amqp_consumer:
 	python3 manage.py amqp_consumer
+
+target: server web_spider amqp_consumer
+
+pipe:
+	make install
+	make migrate
+	make -j3 target
