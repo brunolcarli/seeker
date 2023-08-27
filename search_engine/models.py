@@ -2,7 +2,7 @@ from django.db import models
 
 
 class FoundURL(models.Model):
-    link = models.TextField(blank=False, null=False, unique=True)
+    link = models.TextField(blank=False, null=False)
     viewed = models.BooleanField(default=False)
     status_code = models.IntegerField(null=True) 
 
