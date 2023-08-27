@@ -22,10 +22,11 @@ def web_weave():
     seeds = seeds.iterator()
     target_url = next(seeds, None)
     while target_url is not None:
+        LOGGER.info('Requesting %s', target_url.link)
         try:
-            response = requests.get(target_url.link)
+            response = requests.get(target_url.link, timeout=15)
         except:
-            LOGGER.info(f'|SPIDER|Request failed for URL: {target_url.link}')
+            LOGGER.error(f'|SPIDER|Request failed for URL: {target_url.link}')
             target_url.viewed = True
             target_url.status_code = 9999
             target_url.save()
@@ -36,6 +37,7 @@ def web_weave():
 
         # if the request was not OK update target URL and go to the start of the loop
         if response.status_code != 200:
+            LOGGER.error(f'|SPIDER|Request failed for URL: {target_url.link}')
             target_url.viewed = True
             target_url.status_code = response.status_code
             target_url.save()
@@ -46,8 +48,8 @@ def web_weave():
 
         # grab all existent url htperlinks from page HTML
         soup = BeautifulSoup(response.content.decode('utf-8'), 'html.parser')
-        found_urls =[i.attrs.get('href') for i in soup.find_all('a') if i.attrs.get('href', '').startswith('http')]
-
+        found_urls = [i.attrs.get('href') for i in soup.find_all('a') if i.attrs.get('href', '').startswith('http')]
+        LOGGER.info('Found %s links at %s', str(len(found_urls)), target_url.link)
         # Create new found URLs on database
         for url_found in found_urls:
             obj, created = FoundURL.objects.get_or_create(link=url_found)
@@ -76,20 +78,23 @@ def web_crawler(data):
     try:
         response = requests.get(url)
     except:
-        LOGGER.info(f'|Craler|Request failed for URL: {url}')
+        LOGGER.info(f'|Crawler|Request failed for URL: {url}')
         return
 
     soup = BeautifulSoup(response.content.decode('utf-8'), 'html.parser')
-    texts = [i.text for i in soup.find_all(['p', 'span']) if len(i.text) > 1]
+    texts = [i.text for i in soup.find_all(['p', 'span']) if len(i.text) > 1 and i.text.isalpha() and i.text.isascii()]
     corpus = ' '.join(texts).lower().replace('\t', '').replace('\n', ' ').strip()
     if len(corpus) <= 2:
+        LOGGER.info('|Crawler|Corpus length to small')
         return
 
     try:
         url_from_db = FoundURL.objects.get(link=url)
     except FoundURL.DoesNotExist:
-        url_from_db = FoundURL.objects.create(link=url, viewed=True, status_code=response.status_code)
-        url_from_db.save()
+        # url_from_db = FoundURL.objects.create(link=url, viewed=True, status_code=response.status_code)
+        # url_from_db.save()
+        LOGGER.error('|Crawler|URL %s not found', url)
+        return
 
     sentence_count = len(nltk.sent_tokenize(corpus))
     char_count = len(corpus)
@@ -139,11 +144,13 @@ def text_preprocess(data):
     corpus = ' '.join(i for i in tokens if len(i) >= 2)
 
     if len(corpus) <= 2:
+        LOGGER.info('|Pre|Corpus length to small')
         return
 
     try:
         raw_from_db = RawText.objects.get(id=data['reference_id'])
     except RawText.DoesNotExist:
+        LOGGER.error('|Pre|Raw text not found')
         return
 
     proc_text = ProcText.objects.create(
@@ -192,6 +199,7 @@ def process_text_metadata(data):
     try:
         proc_text_from_db = ProcText.objects.get(id=data['reference_id'])
     except ProcText.DoesNotExist:
+        LOGGER.error('|Meta|Proc text not found')
         return
 
     text_meta = TextMetadata.objects.create(
