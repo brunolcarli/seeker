@@ -26,3 +26,14 @@ class ProcText(models.Model):
     raw_url = models.TextField(blank=False, null=False)
     raw_text_reference = models.ForeignKey(RawText, null=True, on_delete=models.CASCADE)
 
+
+class TextMetadata(models.Model):
+    content = models.TextField(blank=False, null=False)
+    bigrams = models.BinaryField(null=False)
+    trigrams = models.BinaryField(null=False)
+    frequency = models.BinaryField(null=False)
+    bigrams_freq = models.BinaryField(null=False)
+    trigrams_freq = models.BinaryField(null=False)
+    part_of_speech = models.BinaryField(null=False)
+    text_offense = models.BinaryField(null=False)
+    proc_text_reference = models.ForeignKey(ProcText, on_delete=models.CASCADE)
