@@ -17,7 +17,7 @@ STEMMER = nltk.stem.SnowballStemmer('portuguese')
 STOPW = set(stopwords.words())
 
 def web_weave():
-    seeds = FoundURL.objects.filter(viewed=False)
+    seeds = FoundURL.objects.filter(viewed=False).order_by('?')
     LOGGER.info(f'(Re)starting web weaving with {seeds.count()} targets.')
     seeds = seeds.iterator()
     target_url = next(seeds, None)
