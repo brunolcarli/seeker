@@ -76,6 +76,25 @@ class TextMetadataType(graphene.ObjectType):
         return pickle.loads(self.text_offense)
 
 
+class DatabaseObjCount(graphene.ObjectType):
+    urls_found = graphene.Int(description='Number of URLs collected by the Web Spider')
+    raw_texts = graphene.Int(description='Number of raw texts extracted by the Web Crawler from the found URLs')
+    proc_texts = graphene.Int(description='Number of preprocessed raw texts')
+    texts_metadata = graphene.Int(description='Number of fully processed texts with NLP')
+
+    def resolve_urls_found(self, info, **kwargs):
+        return FoundURL.objects.count()
+
+    def resolve_raw_texts(self, info, **kwargs):
+        return RawText.objects.count()
+
+    def resolve_proc_texts(self, info, **kwargs):
+        return ProcText.objects.count()
+
+    def resolve_texts_metadata(self, info, **kwargs):
+        return TextMetadata.objects.count()
+
+
 class QueryResultType(graphene.ObjectType):
     text_input = graphene.String()
     found_urls = DynamicScalar()
@@ -123,6 +142,13 @@ class Query(graphene.ObjectType):
     )
     def resolve_texts_metadata(self, info, **kwargs):
         return TextMetadata.objects.filter(**kwargs)
+
+    object_counts = graphene.Field(
+        DatabaseObjCount,
+        description='Total objects count from database'
+    )
+    def resolve_object_counts(self, info, **kwargs):
+        return DatabaseObjCount()
 
 
 ## Mutations
