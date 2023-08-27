@@ -171,3 +171,5 @@ AMQP = {
         'exchange_type': os.environ.get('AMQP_EX_TYPE'),
     }    
 }
+
+LISA_URL = os.environ.get('LISA_URL')
